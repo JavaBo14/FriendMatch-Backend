@@ -2,6 +2,7 @@ package com.bopao.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.bopao.contant.UserConstant;
 import com.bopao.exception.BusinessException;
 import com.bopao.model.domain.User;
 import com.bopao.service.UserService;
@@ -67,7 +68,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         if (userAccount.length() < 4) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户账号过短");
         }
-        if (userPassword.length() < 8 || checkPassword.length() < 8) {
+        if (userPassword.length() < 6 || checkPassword.length() < 6) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户密码过短");
         }
         if (planetCode.length() > 5) {
@@ -106,7 +107,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         user.setPlanetCode(planetCode);
         boolean saveResult = this.save(user);
         if (!saveResult) {
-            return -1;
+            throw new BusinessException(ErrorCode.NULL_ERROR, "参数为空");
         }
         return user.getId();
     }
@@ -124,19 +125,18 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     public User userLogin(String userAccount, String userPassword, HttpServletRequest request) {
         // 1. 校验
         if (StringUtils.isAnyBlank(userAccount, userPassword)) {
-            return null;
-        }
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数为空");        }
         if (userAccount.length() < 4) {
-            return null;
+            throw new BusinessException(ErrorCode.PARAMS_ERROR,"请求参数错误");
         }
-        if (userPassword.length() < 8) {
-            return null;
+        if (userPassword.length() < 6) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR,"请求参数错误");
         }
         // 账户不能包含特殊字符
         String validPattern = "[`~!@#$%^&*()+=|{}':;',\\\\[\\\\].<>/?~！@#￥%……&*（）——+|{}【】‘；：”“’。，、？]";
         Matcher matcher = Pattern.compile(validPattern).matcher(userAccount);
         if (matcher.find()) {
-            return null;
+            throw new BusinessException(ErrorCode.PARAMS_ERROR,"请求参数包含特殊字符");
         }
         // 2. 加密
         String encryptPassword = DigestUtils.md5DigestAsHex((SALT + userPassword).getBytes());
@@ -148,7 +148,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         // 用户不存在
         if (user == null) {
             log.info("user login failed, userAccount cannot match userPassword");
-            return null;
+            throw new BusinessException(ErrorCode.NULL_ERROR,"用户不存在");
         }
         // 3. 用户脱敏
         User safetyUser = getSafetyUser(user);
@@ -166,7 +166,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     @Override
     public User getSafetyUser(User originUser) {
         if (originUser == null) {
-            return null;
+            throw new BusinessException(ErrorCode.NULL_ERROR);
         }
         User safetyUser = new User();
         safetyUser.setId(originUser.getId());
@@ -189,23 +189,50 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
      * @param request
      */
     @Override
-    public int userLogout(HttpServletRequest request) {
+    public boolean userLogout(HttpServletRequest request) {
         // 移除登录态
         request.getSession().removeAttribute(USER_LOGIN_STATE);
-        return 1;
+        return true;
     }
 
+    /**
+     * 获取当前登录用户
+     * @param request
+     * @return
+     */
     @Override
-    public User userUpdate(User user) {
-        QueryWrapper<User> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("id", user.getId());
-        User updateUser = userMapper.selectOne(queryWrapper);
-        BeanUtils.copyProperties(user,updateUser);
-        boolean saveResult = this.updateById(updateUser);
-        if (saveResult){
-            return updateUser;
+    public User getLoginUser(HttpServletRequest request) {
+        Object loginUser = request.getSession().getAttribute(USER_LOGIN_STATE);
+        User currentUser = (User) loginUser;
+        if (currentUser == null || currentUser.getId() == null){
+         throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
-        throw new BusinessException(ErrorCode.SYSTEM_ERROR, "数据更新失败");
+        //再做一遍查询确保用户数据的最新性
+        long userId = currentUser.getId();
+        currentUser = this.getById(userId);
+        return currentUser;
+    }
+    /**
+     * 是否为管理员
+     *
+     * @param request
+     * @return
+     */
+    @Override
+    public boolean isAdmin(HttpServletRequest request) {
+            Object userObj = request.getSession().getAttribute(USER_LOGIN_STATE);
+            User user = (User) userObj;
+            return isAdmin(user);
+        }
+    /**
+     * 是否为管理员
+     *
+     * @param user
+     * @return
+     */
+    @Override
+    public boolean isAdmin(User user) {
+        return user != null && user.getUserRole() == UserConstant.ADMIN_ROLE;
     }
 
     @Override

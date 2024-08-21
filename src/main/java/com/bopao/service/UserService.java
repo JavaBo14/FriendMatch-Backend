@@ -43,7 +43,7 @@ public interface UserService extends IService<User> {
      * @param originUser
      * @return
      */
-    User getSafetyUser(User originUser);//(User originUser)参数
+    User getSafetyUser(User originUser);
 
 
     /**
@@ -52,8 +52,34 @@ public interface UserService extends IService<User> {
      * @param request
      * @return
      */
-    int userLogout(HttpServletRequest request);
+    boolean userLogout(HttpServletRequest request);
 
-    User userUpdate(User user);
+    /**
+     * 获取当前登录用户
+     * @param
+     * @return
+     */
+    User getLoginUser(HttpServletRequest request);
+    /**
+     * 是否为管理员
+     *
+     * @param request
+     * @return
+     */
+    boolean isAdmin(HttpServletRequest request);
+
+    /**
+     * 是否为管理员
+     *
+     * @param user
+     * @return
+     */
+    boolean isAdmin(User user);
+
+    /**
+     * 通过标签查询用户
+     * @param tagNameList
+     * @return
+     */
     List<User> searchUsersByTags(List<String> tagNameList);
 }

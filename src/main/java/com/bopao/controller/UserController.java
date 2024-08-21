@@ -11,6 +11,7 @@ import com.bopao.common.BaseResponse;
 import com.bopao.common.ErrorCode;
 import com.bopao.common.ResultUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.BeanUtils;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.*;
 import javax.annotation.Resource;
@@ -83,11 +84,11 @@ public class UserController {
      * @return
      */
     @PostMapping("/logout")
-    public BaseResponse<Integer> userLogout(HttpServletRequest request) {
+    public BaseResponse<Boolean> userLogout(HttpServletRequest request) {
         if (request == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
-        int result = userService.userLogout(request);
+        boolean result = userService.userLogout(request);
         return ResultUtils.success(result);
     }
 
@@ -115,7 +116,7 @@ public class UserController {
 
     @GetMapping("/search")
     public BaseResponse<List<User>> searchUsers(String username, HttpServletRequest request) {
-        if (!isAdmin(request)) {
+        if (!userService.isAdmin(request)) {
             throw new BusinessException(ErrorCode.NO_AUTH, "缺少管理员权限");
         }
         QueryWrapper<User> queryWrapper = new QueryWrapper<>();
@@ -129,7 +130,7 @@ public class UserController {
 
     @PostMapping("/delete")
     public BaseResponse<Boolean> deleteUser(@RequestBody long id, HttpServletRequest request) {
-        if (!isAdmin(request)) {
+        if (!userService.isAdmin(request)) {
             throw new BusinessException(ErrorCode.NO_AUTH);
         }
         if (id <= 0) {
@@ -140,38 +141,29 @@ public class UserController {
     }
 
     @PostMapping("/update")
-    public BaseResponse<User> update(@RequestBody User user, HttpServletRequest request) {
-
-        // 判断 id 是否为空
-        Long id = user.getId();
-        if (id == null) {
+    public BaseResponse<Boolean> update(@RequestBody User user, HttpServletRequest request) {
+        if (user == null || user.getId() == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
-        User user1 = userService.userUpdate(user);
-        return ResultUtils.success(user1);
-
+        User loginUser = userService.getLoginUser(request);
+        Long loginUserId = loginUser.getId();
+        // 如果 loginUserId 不匹配或用户不是管理员，则抛出参数错误异常
+        if (!loginUserId.equals(user.getId()) && !userService.isAdmin(request)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        User newUser = new User();
+        BeanUtils.copyProperties(user, newUser);
+        boolean result = userService.updateById(newUser);
+        return ResultUtils.success(result);
     }
     @GetMapping("search/tags")
-    public BaseResponse<List<User>> searchUsersByTags(@RequestParam(required = false) List<String> tagNameList){
-        if (CollectionUtils.isEmpty(tagNameList)){
+    public BaseResponse<List<User>> searchUsersByTags(@RequestParam(required = false) List<String> tagNameList) {
+        if (CollectionUtils.isEmpty(tagNameList)) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
         List<User> userList = userService.searchUsersByTags(tagNameList);
         return ResultUtils.success(userList);
     }
-
-
-    /**
-     * 是否为管理员
-     *
-     * @param request
-     * @return
-     */
-    private boolean isAdmin(HttpServletRequest request) {
-        // 仅管理员可查询
-        Object userObj = request.getSession().getAttribute(UserConstant.USER_LOGIN_STATE);
-        User user = (User) userObj;
-        return user != null && user.getUserRole() == UserConstant.ADMIN_ROLE;
-    }
-
 }
+
+

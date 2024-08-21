@@ -12,9 +12,17 @@ spring:
     url: jdbc:mysql://localhost:3306/bopao
     username: root
     password: 1014
-  # session 失效时间
+  # session 失效时间（分钟）
   session:
     timeout: 86400
+    store-type: redis
+  # Redis 配置
+  # todo 需替换配置，然后取消注释
+  redis:
+    database: 2
+    host: localhost
+    port: 6379
+    timeout: 5000
 server:
   port: 8080
   servlet:
