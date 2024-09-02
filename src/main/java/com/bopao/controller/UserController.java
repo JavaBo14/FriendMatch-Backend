@@ -1,6 +1,7 @@
 package com.bopao.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.bopao.contant.UserConstant;
 import com.bopao.exception.BusinessException;
 import com.bopao.model.domain.User;
@@ -10,14 +11,18 @@ import com.bopao.service.UserService;
 import com.bopao.common.BaseResponse;
 import com.bopao.common.ErrorCode;
 import com.bopao.common.ResultUtils;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.*;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
@@ -26,6 +31,7 @@ import java.util.stream.Collectors;
  * @author
  * @from
  */
+@Slf4j
 @RestController
 @RequestMapping("/user")
 public class UserController {
@@ -100,20 +106,12 @@ public class UserController {
      */
     @GetMapping("/current")
     public BaseResponse<User> getCurrentUser(HttpServletRequest request) {
-        Object userObj = request.getSession().getAttribute(UserConstant.USER_LOGIN_STATE);
-        User currentUser = (User) userObj;
-        if (currentUser == null) {
-            throw new BusinessException(ErrorCode.NOT_LOGIN);
-        }
-        long userId = currentUser.getId();
-        // TODO 校验用户是否合法
-        User user = userService.getById(userId);
-        User safetyUser = userService.getSafetyUser(user);
+        User loginUser = userService.getLoginUser(request);
+        User safetyUser = userService.getSafetyUser(loginUser);
         return ResultUtils.success(safetyUser);
     }
 
     // https://yupi.icu/
-
     @GetMapping("/search")
     public BaseResponse<List<User>> searchUsers(String username, HttpServletRequest request) {
         if (!userService.isAdmin(request)) {
@@ -163,6 +161,14 @@ public class UserController {
         }
         List<User> userList = userService.searchUsersByTags(tagNameList);
         return ResultUtils.success(userList);
+    }
+
+    @GetMapping("/recommend")
+    public BaseResponse<Page<User>> recommendUsers(@RequestParam long pageSize, @RequestParam long pageNum, HttpServletRequest request) {
+        // 调用服务层的方法
+        Page<User> recommendedUsers = userService.recommendUsers(pageSize, pageNum, request);
+        // 将结果封装到BaseResponse中返回
+        return ResultUtils.success(recommendedUsers);
     }
 }
 

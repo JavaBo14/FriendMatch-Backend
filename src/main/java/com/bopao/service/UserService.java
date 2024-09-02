@@ -1,5 +1,6 @@
 package com.bopao.service;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.bopao.model.domain.User;
 import com.baomidou.mybatisplus.extension.service.IService;
 import org.springframework.stereotype.Service;
@@ -82,4 +83,6 @@ public interface UserService extends IService<User> {
      * @return
      */
     List<User> searchUsersByTags(List<String> tagNameList);
+
+    Page<User> recommendUsers(long pageSize, long pageNum, HttpServletRequest request);
 }

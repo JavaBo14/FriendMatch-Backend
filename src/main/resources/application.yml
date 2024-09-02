@@ -27,6 +27,10 @@ server:
   port: 8080
   servlet:
     context-path: /api
+    #将cookie的作用域提高到域名层级（忽略端口）
+    session:
+      cookie:
+        domain: localhost
 mybatis-plus:
   configuration:
     map-underscore-to-camel-case: false

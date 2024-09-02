@@ -1,7 +1,9 @@
 package com.bopao.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.bopao.common.ResultUtils;
 import com.bopao.contant.UserConstant;
 import com.bopao.exception.BusinessException;
 import com.bopao.model.domain.User;
@@ -13,6 +15,8 @@ import com.bopao.mapper.UserMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.DigestUtils;
@@ -23,6 +27,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -43,6 +48,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     @Resource
     private UserMapper userMapper;
 
+    @Resource
+    private RedisTemplate redisTemplate;
 
 
     /**
@@ -259,5 +266,26 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         }).map(this::getSafetyUser).collect(Collectors.toList());
     }
 
+    @Override
+    public Page<User> recommendUsers(long pageSize, long pageNum, HttpServletRequest request) {
+        User loginUser = this.getLoginUser(request);
+        String redisKey = String.format("bopao:user:recommend:%s", loginUser.getId());
+        ValueOperations valueOperations = redisTemplate.opsForValue();
+        //有缓存走缓存
+        Page<User>  userPage = (Page<User>)valueOperations.get(redisKey);
+        if(userPage != null){
+            return userPage;
+        }
+        // 无缓存，查数据库
+        QueryWrapper<User> queryWrapper = new QueryWrapper<>();
+        userPage = this.page(new Page<>(pageNum, pageSize), queryWrapper);
+        // 写缓存
+        try {
+            valueOperations.set(redisKey, userPage, 30000, TimeUnit.MILLISECONDS);
+        }catch (Exception e){
+            log.error("redis set key error", e);
+        }
+        return userPage;
+    }
 }
 

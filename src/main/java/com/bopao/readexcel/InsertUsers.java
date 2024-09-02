@@ -11,8 +11,8 @@ import javax.annotation.Resource;
 /**
  * 导入用户任务
  *
- * @author <a href="https://github.com/liyupi">程序员鱼皮</a>
- * @from <a href="https://yupi.icu">编程导航知识星球</a>
+ * @author <a href="https://github.com/JavaBo14/Matching">Bo</a>
+ * 
  */
 @Component
 public class InsertUsers {
@@ -25,6 +25,7 @@ public class InsertUsers {
      */
 //    @Scheduled(initialDelay = 5000, fixedRate = Long.MAX_VALUE)
     public void doInsertUsers() {
+        //计时工具类
         StopWatch stopWatch = new StopWatch();
         System.out.println("goodgoodgood");
         stopWatch.start();
