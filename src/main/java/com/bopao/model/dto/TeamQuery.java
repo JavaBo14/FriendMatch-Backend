@@ -1,9 +1,12 @@
 package com.bopao.model.dto;
 
+
 import com.bopao.common.PageRequest;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+
 import java.util.List;
+
 
 /**
  * 队伍查询封装类

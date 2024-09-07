@@ -114,7 +114,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         user.setPlanetCode(planetCode);
         boolean saveResult = this.save(user);
         if (!saveResult) {
-            throw new BusinessException(ErrorCode.NULL_ERROR, "参数为空");
+            throw new BusinessException(ErrorCode.NOT_FOUND_ERROR, "参数为空");
         }
         return user.getId();
     }
@@ -155,7 +155,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         // 用户不存在
         if (user == null) {
             log.info("user login failed, userAccount cannot match userPassword");
-            throw new BusinessException(ErrorCode.NULL_ERROR,"用户不存在");
+            throw new BusinessException(ErrorCode.NOT_FOUND_ERROR,"用户不存在");
         }
         // 3. 用户脱敏
         User safetyUser = getSafetyUser(user);
@@ -173,7 +173,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     @Override
     public User getSafetyUser(User originUser) {
         if (originUser == null) {
-            throw new BusinessException(ErrorCode.NULL_ERROR);
+            throw new BusinessException(ErrorCode.NOT_FOUND_ERROR);
         }
         User safetyUser = new User();
         safetyUser.setId(originUser.getId());

@@ -14,7 +14,7 @@ import javax.annotation.Resource;
  * @author <a href="https://github.com/JavaBo14/Matching">Bo</a>
  * 
  */
-@Component
+//@Component
 public class InsertUsers {
 
     @Resource
@@ -41,7 +41,7 @@ public class InsertUsers {
             user.setEmail("123@qq.com");
             user.setTags("[]");
             user.setUserStatus(0);
-            user.setUserRole(0);
+//            user.setUserRole(0);
             user.setPlanetCode("11111111");
             userMapper.insert(user);
         }

@@ -1,19 +1,19 @@
 package com.bopao.controller;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.bopao.annotation.AuthCheck;
 import com.bopao.common.BaseResponse;
 import com.bopao.common.DeleteRequest;
 import com.bopao.common.ErrorCode;
 import com.bopao.common.ResultUtils;
-import com.bopao.constant.UserConstant;
 import com.bopao.exception.BusinessException;
 import com.bopao.exception.ThrowUtils;
 import com.bopao.model.domain.Team;
+import com.bopao.model.domain.User;
 import com.bopao.model.dto.TeamQuery;
 import com.bopao.model.request.TeamAddRequest;
 import com.bopao.model.request.TeamUpdateRequest;
 import com.bopao.service.TeamService;
+import com.bopao.service.UserService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.web.bind.annotation.*;
@@ -30,6 +30,9 @@ public class TeamController {
     @Resource
     private TeamService teamService;
 
+    @Resource
+    private UserService userService;
+
     // region 增删改查
 
     /**
@@ -40,14 +43,14 @@ public class TeamController {
      * @return
      */
     @PostMapping("/add")
-    public BaseResponse<Long> addUser(@RequestBody TeamAddRequest teamAddRequest, HttpServletRequest request) {
+    public BaseResponse<Long> addTeam(@RequestBody TeamAddRequest teamAddRequest, HttpServletRequest request) {
         if (teamAddRequest == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
+        User loginUser = userService.getLoginUser(request);
         Team team=new Team();
         BeanUtils.copyProperties(teamAddRequest, team);
-        boolean result = teamService.save(team);
-        ThrowUtils.throwIf(!result, ErrorCode.SYSTEM_ERROR);
+        teamService.addTeam(team,loginUser);
         return ResultUtils.success(team.getId());
     }
 
@@ -95,7 +98,6 @@ public class TeamController {
      * @return
      */
     @GetMapping("/get")
-    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
     public BaseResponse<Team> getUserById(long id, HttpServletRequest request) {
         if (id <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
