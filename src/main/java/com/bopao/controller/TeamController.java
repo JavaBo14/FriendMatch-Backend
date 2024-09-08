@@ -62,7 +62,7 @@ public class TeamController {
      * @return
      */
     @PostMapping("/delete")
-    public BaseResponse<Boolean> deleteUser(@RequestBody DeleteRequest deleteRequest, HttpServletRequest request) {
+    public BaseResponse<Boolean> deleteTeam(@RequestBody DeleteRequest deleteRequest, HttpServletRequest request) {
         if (deleteRequest == null || deleteRequest.getId() <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
@@ -78,14 +78,13 @@ public class TeamController {
      * @return
      */
     @PostMapping("/update")
-    public BaseResponse<Boolean> updateUser(@RequestBody TeamUpdateRequest teamUpdateRequest,
+    public BaseResponse<Boolean> updateTeam(@RequestBody TeamUpdateRequest teamUpdateRequest,
                                             HttpServletRequest request) {
         if (teamUpdateRequest == null || teamUpdateRequest.getId() == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
-        Team team=new Team();
-        BeanUtils.copyProperties(teamUpdateRequest, team);
-        boolean result = teamService.updateById(team);
+        User loginUser = userService.getLoginUser(request);
+        boolean result = teamService.updateTeam(teamUpdateRequest,loginUser);
         ThrowUtils.throwIf(!result, ErrorCode.SYSTEM_ERROR);
         return ResultUtils.success(true);
     }
@@ -98,7 +97,7 @@ public class TeamController {
      * @return
      */
     @GetMapping("/get")
-    public BaseResponse<Team> getUserById(long id, HttpServletRequest request) {
+    public BaseResponse<Team> getTeamById(long id, HttpServletRequest request) {
         if (id <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
@@ -107,6 +106,25 @@ public class TeamController {
         return ResultUtils.success(team);
     }
 
+    /**
+     * 获取队伍列表
+     *
+     * @param teamQuery
+     * @param
+     * @return
+     */
+    @GetMapping("/list")
+    public BaseResponse<Page<Team>> listTeams(TeamQuery teamQuery) {
+        if (teamQuery == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        Team team = new Team();
+        BeanUtils.copyProperties(teamQuery, team);
+        Page<Team> page = new Page<>(teamQuery.getCurrent(), teamQuery.getPageSize());
+        QueryWrapper<Team> queryWrapper = new QueryWrapper<>(team);
+        Page<Team> resultPage = teamService.page(page, queryWrapper);
+        return ResultUtils.success(resultPage);
+    }
     /**
      * 分页获取队伍列表
      *

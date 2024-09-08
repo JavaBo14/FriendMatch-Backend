@@ -9,13 +9,17 @@ import com.bopao.model.domain.Team;
 import com.bopao.model.domain.User;
 import com.bopao.model.domain.UserTeam;
 import com.bopao.model.enums.TeamStatusEnum;
+import com.bopao.model.request.TeamUpdateRequest;
 import com.bopao.service.TeamService;
+import com.bopao.service.UserService;
 import com.bopao.service.UserTeamService;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
+import javax.servlet.http.HttpServletRequest;
 import java.util.Date;
 import java.util.Optional;
 
@@ -29,6 +33,10 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
     implements TeamService {
     @Resource
     private UserTeamService userTeamService;
+
+    @Resource
+    private UserService userService;
+
     @Override
     @Transactional(rollbackFor = Exception.class)
     public long addTeam(Team team, User loginUser) {
@@ -60,7 +68,6 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
         TeamStatusEnum enumByValue = TeamStatusEnum.getEnumByValue(status);
         if (enumByValue == null){
             throw new BusinessException(ErrorCode.PARAMS_ERROR,"队伍状态不符合要求");
-
         }
         //   5. 如果 status 是加密状态，一定要有密码，且密码 <= 32
         String teamPassword = team.getPassword();
@@ -100,8 +107,30 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
         ThrowUtils.throwIf(!userTeamResult,ErrorCode.SYSTEM_ERROR,"插入数据失败");
         return teamId;
     }
-}
 
+    @Override
+    public boolean updateTeam(TeamUpdateRequest teamUpdateRequest,User loginUser) {
+        if (teamUpdateRequest == null){
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        Team oldTeam = this.getById(teamUpdateRequest.getId());
+        if (oldTeam == null){
+            throw new BusinessException(ErrorCode.PARAMS_ERROR,"队伍不存在");
+        }
+        //只有管理员或者队伍的创建者可以修改
+        if (!userService.isAdmin(loginUser) && loginUser.getId() != oldTeam.getUserId()){
+            throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
+        }
+        TeamStatusEnum enumByValue = TeamStatusEnum.getEnumByValue(teamUpdateRequest.getStatus());
+        if (enumByValue.equals(TeamStatusEnum.SECRET) && teamUpdateRequest.getPassword() == null){
+            throw new BusinessException(ErrorCode.OPERATION_ERROR,"加密房间必须设置密码");
+        }
+        Team newTeam=new Team();
+        BeanUtils.copyProperties(teamUpdateRequest,newTeam);
+        boolean result = this.updateById(newTeam);
+        return result;
+    }
+}
 
 
 
