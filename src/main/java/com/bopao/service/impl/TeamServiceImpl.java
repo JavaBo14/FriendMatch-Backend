@@ -8,19 +8,24 @@ import com.bopao.mapper.TeamMapper;
 import com.bopao.model.domain.Team;
 import com.bopao.model.domain.User;
 import com.bopao.model.domain.UserTeam;
+import com.bopao.model.dto.TeamQuery;
 import com.bopao.model.enums.TeamStatusEnum;
 import com.bopao.model.request.TeamUpdateRequest;
+import com.bopao.model.vo.TeamUserVO;
+import com.bopao.model.vo.UserVO;
 import com.bopao.service.TeamService;
 import com.bopao.service.UserService;
 import com.bopao.service.UserTeamService;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
-import javax.servlet.http.HttpServletRequest;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -129,6 +134,73 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
         BeanUtils.copyProperties(teamUpdateRequest,newTeam);
         boolean result = this.updateById(newTeam);
         return result;
+    }
+
+    @Override
+    public List<TeamUserVO> listTeams(TeamQuery teamQuery, boolean isAdmin) {
+        QueryWrapper<Team> queryWrapper=new QueryWrapper<>();
+        if (teamQuery !=null){
+            Long id = teamQuery.getId();
+            if (id != null && id >0){
+                queryWrapper.eq("id",id);
+            }
+            List<Long> idList = teamQuery.getIdList();
+            if (CollectionUtils.isNotEmpty(idList)){
+                queryWrapper.in("id",id);
+            }
+            String searchText = teamQuery.getSearchText();
+            if (StringUtils.isNotBlank(searchText)){
+                queryWrapper.and(qw -> qw.like("name", searchText).or().like("description", searchText));
+            }
+            String name = teamQuery.getName();
+            if (StringUtils.isNotBlank(name)){
+                queryWrapper.like("name",name);
+            }
+            String description = teamQuery.getDescription();
+            if (StringUtils.isNotBlank(description)){
+                queryWrapper.like("description",description);
+            }
+            Integer maxNum = teamQuery.getMaxNum();
+            if (maxNum != null && maxNum > 0){
+                queryWrapper.eq("maxNum",maxNum);
+            }
+            Long userId = teamQuery.getUserId();
+            if (userId != null && userId >0){
+                queryWrapper.eq("userId",userId);
+            }
+            Integer status = teamQuery.getStatus();
+            TeamStatusEnum enumByValue = TeamStatusEnum.getEnumByValue(status);
+            if (enumByValue == null){
+                enumByValue = TeamStatusEnum.PUBLIC;
+            }
+            if (!isAdmin && enumByValue.equals(TeamStatusEnum.PRIVATE)){
+                throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
+            }
+            queryWrapper.eq("status",enumByValue.getValue());
+        }
+
+        //不展示已过期的队伍
+        queryWrapper.and(qw -> qw.gt("expireTime", new Date()).or().isNull("expireTime"));
+        List<Team> teamList = this.list(queryWrapper);
+        if (CollectionUtils.isEmpty(teamList)){
+            return new ArrayList<>();
+        }
+        List<TeamUserVO> teamUserVOList = new ArrayList<>();
+        for (Team team : teamList){
+            Long userId = team.getUserId();
+            if (userId == null){
+                continue;
+            }
+            User user = userService.getById(userId);
+            UserVO userVO=new UserVO();
+            BeanUtils.copyProperties(user,userVO);
+
+            TeamUserVO teamUserVO=new TeamUserVO();
+            BeanUtils.copyProperties(team,teamUserVO);
+            teamUserVO.setCreateUser(userVO);
+            teamUserVOList.add(teamUserVO);
+        }
+        return teamUserVOList;
     }
 }
 

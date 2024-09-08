@@ -12,6 +12,7 @@ import com.bopao.model.domain.User;
 import com.bopao.model.dto.TeamQuery;
 import com.bopao.model.request.TeamAddRequest;
 import com.bopao.model.request.TeamUpdateRequest;
+import com.bopao.model.vo.TeamUserVO;
 import com.bopao.service.TeamService;
 import com.bopao.service.UserService;
 import lombok.extern.slf4j.Slf4j;
@@ -19,6 +20,7 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.web.bind.annotation.*;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+import java.util.List;
 
 
 @Slf4j
@@ -114,16 +116,15 @@ public class TeamController {
      * @return
      */
     @GetMapping("/list")
-    public BaseResponse<Page<Team>> listTeams(TeamQuery teamQuery) {
+    public BaseResponse<List<TeamUserVO>> listTeams(TeamQuery teamQuery,HttpServletRequest httpServletRequest) {
         if (teamQuery == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
-        Team team = new Team();
-        BeanUtils.copyProperties(teamQuery, team);
-        Page<Team> page = new Page<>(teamQuery.getCurrent(), teamQuery.getPageSize());
-        QueryWrapper<Team> queryWrapper = new QueryWrapper<>(team);
-        Page<Team> resultPage = teamService.page(page, queryWrapper);
-        return ResultUtils.success(resultPage);
+        boolean isAdmin = userService.isAdmin(httpServletRequest);
+        List<TeamUserVO> listTeam = teamService.listTeams(teamQuery, isAdmin);
+
+
+        return ResultUtils.success(listTeam);
     }
     /**
      * 分页获取队伍列表
