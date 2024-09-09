@@ -10,6 +10,7 @@ import com.bopao.model.domain.User;
 import com.bopao.model.domain.UserTeam;
 import com.bopao.model.dto.TeamQuery;
 import com.bopao.model.enums.TeamStatusEnum;
+import com.bopao.model.request.TeamJoinRequest;
 import com.bopao.model.request.TeamUpdateRequest;
 import com.bopao.model.vo.TeamUserVO;
 import com.bopao.model.vo.UserVO;
@@ -23,10 +24,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 /**
 * @author Bo
@@ -90,7 +88,7 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
         // todo 有 bug，可能同时创建 100 个队伍
         Long loginUserId = loginUser.getId();
         QueryWrapper<Team> queryWrapper=new QueryWrapper<>();
-        queryWrapper.like("userId", loginUserId);
+        queryWrapper.eq("userId", loginUserId);
         long count = this.count(queryWrapper);
         if (count >=5 ){
             throw new BusinessException(ErrorCode.PARAMS_ERROR,"创建队伍过多");
@@ -127,7 +125,7 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
             throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
         }
         TeamStatusEnum enumByValue = TeamStatusEnum.getEnumByValue(teamUpdateRequest.getStatus());
-        if (enumByValue.equals(TeamStatusEnum.SECRET) && teamUpdateRequest.getPassword() == null){
+        if (enumByValue.equals(TeamStatusEnum.SECRET) && StringUtils.isBlank(teamUpdateRequest.getPassword())){
             throw new BusinessException(ErrorCode.OPERATION_ERROR,"加密房间必须设置密码");
         }
         Team newTeam=new Team();
@@ -201,6 +199,90 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
             teamUserVOList.add(teamUserVO);
         }
         return teamUserVOList;
+    }
+
+    @Override
+    public boolean joinTeam(TeamJoinRequest teamJoinRequest, User loginUser) {
+    if (teamJoinRequest == null){
+        throw new BusinessException(ErrorCode.NOT_LOGIN_ERROR);
+    }
+        //队伍必须存在，只能加入未满，未过期队伍
+        Long teamId = teamJoinRequest.getTeamId();
+        if (teamId == null){
+            throw new BusinessException(ErrorCode.NOT_LOGIN_ERROR,"队伍存在");
+        }
+        Team team=getTeamById(teamId);
+        Date expireTime = team.getExpireTime();
+        if (expireTime != null && expireTime.before(new Date())) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "队伍已过期");
+        }
+        Integer status = team.getStatus();
+        TeamStatusEnum enumByValue = TeamStatusEnum.getEnumByValue(status);
+        if (TeamStatusEnum.PRIVATE.equals(enumByValue)){
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "不允许加入私有队伍");
+        }
+        String password = teamJoinRequest.getPassword();
+        if (TeamStatusEnum.SECRET.equals(enumByValue)){
+            if (StringUtils.isBlank(password) || !password.equals(team.getPassword())){
+                throw new BusinessException(ErrorCode.FORBIDDEN_ERROR, "密码错误");
+            }
+        }
+        //用户最多加入5个队伍
+        Long userId = loginUser.getId();
+        QueryWrapper<UserTeam> queryWrapper=new QueryWrapper<>();
+        queryWrapper.eq("userId",userId);
+        long userJoinTeamCount = userTeamService.count(queryWrapper);
+        if (userJoinTeamCount > 5){
+            throw new BusinessException(ErrorCode.OPERATION_ERROR,"用户只能加入5个队伍");
+        }
+        //不能重复加入已加入的队伍
+        queryWrapper=new QueryWrapper<>();
+        queryWrapper.eq("userId",userId);
+        queryWrapper.eq("teamId",teamId);
+        long teamJoinCount = userTeamService.count(queryWrapper);
+        if (teamJoinCount > 0){
+            throw new BusinessException(ErrorCode.OPERATION_ERROR,"不能重复加入队伍");
+        }
+        //已经加入队伍的人数
+        long joinTeamCount = this.countTeamUserByTeamId(teamId);
+        if (joinTeamCount  > team.getMaxNum()){
+            throw new BusinessException(ErrorCode.OPERATION_ERROR,"队伍已满");
+        }
+        //修改用户队伍信息
+        UserTeam userTeam=new UserTeam();
+        userTeam.setUserId(userId);
+        userTeam.setTeamId(teamId);
+        userTeam.setJoinTime(new Date());
+        boolean result = userTeamService.save(userTeam);
+        return result;
+    }
+    /**
+     * 根据 id 获取队伍信息
+     *
+     * @param teamId
+     * @return
+     */
+    private Team getTeamById(Long teamId) {
+        if (teamId == null || teamId <= 0) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        Team team = this.getById(teamId);
+        if (team == null) {
+            throw new BusinessException(ErrorCode.NOT_FOUND_ERROR, "队伍不存在");
+        }
+        return team;
+    }
+
+    /**
+     * 获取某队伍当前人数
+     *
+     * @param teamId
+     * @return
+     */
+    private long countTeamUserByTeamId(long teamId) {
+        QueryWrapper<UserTeam> userTeamQueryWrapper = new QueryWrapper<>();
+        userTeamQueryWrapper.eq("teamId", teamId);
+        return userTeamService.count(userTeamQueryWrapper);
     }
 }
 

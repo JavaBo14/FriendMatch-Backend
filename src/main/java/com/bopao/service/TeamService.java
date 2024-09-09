@@ -4,10 +4,10 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.bopao.model.domain.Team;
 import com.bopao.model.domain.User;
 import com.bopao.model.dto.TeamQuery;
+import com.bopao.model.request.TeamJoinRequest;
 import com.bopao.model.request.TeamUpdateRequest;
 import com.bopao.model.vo.TeamUserVO;
 
-import javax.servlet.http.HttpServletRequest;
 import java.util.List;
 
 
@@ -40,4 +40,6 @@ public interface TeamService extends IService<Team> {
      * @return
      */
     List<TeamUserVO> listTeams(TeamQuery teamQuery, boolean isAdmin);
+
+    boolean joinTeam(TeamJoinRequest teamJoinRequest, User loginUser);
 }

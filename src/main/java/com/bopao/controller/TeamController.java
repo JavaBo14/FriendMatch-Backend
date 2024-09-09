@@ -11,6 +11,7 @@ import com.bopao.model.domain.Team;
 import com.bopao.model.domain.User;
 import com.bopao.model.dto.TeamQuery;
 import com.bopao.model.request.TeamAddRequest;
+import com.bopao.model.request.TeamJoinRequest;
 import com.bopao.model.request.TeamUpdateRequest;
 import com.bopao.model.vo.TeamUserVO;
 import com.bopao.service.TeamService;
@@ -145,6 +146,13 @@ public class TeamController {
         Page<Team> resultPage = teamService.page(page, queryWrapper);
         return ResultUtils.success(resultPage);
     }
-    // endregion
-
+    @PostMapping("join")
+    public BaseResponse<Boolean> joinTeam(TeamJoinRequest teamJoinRequest,HttpServletRequest httpServletRequest){
+        if (teamJoinRequest == null){
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        User loginUser = userService.getLoginUser(httpServletRequest);
+        boolean result = teamService.joinTeam(teamJoinRequest, loginUser);
+        return ResultUtils.success(result);
+    }
 }
