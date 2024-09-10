@@ -1,13 +1,12 @@
 package com.bopao.service;
-
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.bopao.model.domain.Team;
 import com.bopao.model.domain.User;
 import com.bopao.model.dto.TeamQuery;
 import com.bopao.model.request.TeamJoinRequest;
+import com.bopao.model.request.TeamQuitRequest;
 import com.bopao.model.request.TeamUpdateRequest;
 import com.bopao.model.vo.TeamUserVO;
-
 import java.util.List;
 
 
@@ -41,5 +40,28 @@ public interface TeamService extends IService<Team> {
      */
     List<TeamUserVO> listTeams(TeamQuery teamQuery, boolean isAdmin);
 
+    /**
+     * 加入队伍
+     * @param teamJoinRequest
+     * @param loginUser
+     * @return
+     */
+
     boolean joinTeam(TeamJoinRequest teamJoinRequest, User loginUser);
+
+    /**
+     * 队长解散队伍
+     * @param id
+     * @param loginUser
+     * @return
+     */
+    boolean removeTeam(long id, User loginUser);
+
+    /**
+     * 退出队伍
+     * @param teamquitRequest
+     * @param loginUser
+     * @return
+     */
+    boolean quitTeam(TeamQuitRequest teamquitRequest,User loginUser);
 }

@@ -1,7 +1,6 @@
 package com.bopao.model.request;
 
 import lombok.Data;
-
 import java.io.Serializable;
 import java.util.Date;
 
@@ -47,4 +46,3 @@ public class TeamUpdateRequest implements Serializable {
     private String password;
 }
 
-// 负责人【yupi】 https://space.bilibili.com/12890453/

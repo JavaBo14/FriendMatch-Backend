@@ -3,24 +3,21 @@ package com.bopao.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.bopao.common.ResultUtils;
+import com.bopao.common.ErrorCode;
 import com.bopao.contant.UserConstant;
 import com.bopao.exception.BusinessException;
+import com.bopao.mapper.UserMapper;
 import com.bopao.model.domain.User;
 import com.bopao.service.UserService;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
-import com.bopao.common.ErrorCode;
-import com.bopao.mapper.UserMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.BeanUtils;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.DigestUtils;
-
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.util.HashSet;
@@ -31,7 +28,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-
 import static com.bopao.contant.UserConstant.USER_LOGIN_STATE;
 
 /**

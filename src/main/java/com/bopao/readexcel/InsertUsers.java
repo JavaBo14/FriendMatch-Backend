@@ -3,9 +3,7 @@ package com.bopao.readexcel;
 
 import com.bopao.mapper.UserMapper;
 import com.bopao.model.domain.User;
-import org.springframework.stereotype.Component;
 import org.springframework.util.StopWatch;
-
 import javax.annotation.Resource;
 
 /**

@@ -8,7 +8,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- * 导入星球用户到数据库
+ * 导入用户到数据库
  *
  * @author <a href="https://github.com/JavaBo14/Matching">Bo</a>
  * 

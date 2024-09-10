@@ -1,7 +1,6 @@
 package com.bopao.mapper;
 
 import com.bopao.model.domain.Team;
-
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 
 /**

@@ -12,6 +12,7 @@ import com.bopao.model.domain.User;
 import com.bopao.model.dto.TeamQuery;
 import com.bopao.model.request.TeamAddRequest;
 import com.bopao.model.request.TeamJoinRequest;
+import com.bopao.model.request.TeamQuitRequest;
 import com.bopao.model.request.TeamUpdateRequest;
 import com.bopao.model.vo.TeamUserVO;
 import com.bopao.service.TeamService;
@@ -53,8 +54,8 @@ public class TeamController {
         User loginUser = userService.getLoginUser(request);
         Team team=new Team();
         BeanUtils.copyProperties(teamAddRequest, team);
-        teamService.addTeam(team,loginUser);
-        return ResultUtils.success(team.getId());
+        long teamId = teamService.addTeam(team, loginUser);
+        return ResultUtils.success(teamId);
     }
 
     /**
@@ -69,8 +70,11 @@ public class TeamController {
         if (deleteRequest == null || deleteRequest.getId() <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
-        boolean b = teamService.removeById(deleteRequest.getId());
-        return ResultUtils.success(b);
+        long id = deleteRequest.getId();
+        User loginUser = userService.getLoginUser(request);
+        boolean result = teamService.removeTeam(id,loginUser);
+        ThrowUtils.throwIf(!result,ErrorCode.OPERATION_ERROR);
+        return ResultUtils.success(true);
     }
 
     /**
@@ -96,11 +100,11 @@ public class TeamController {
      * 根据 id 获取队伍
      *
      * @param id
-     * @param request
+     * @param
      * @return
      */
     @GetMapping("/get")
-    public BaseResponse<Team> getTeamById(long id, HttpServletRequest request) {
+    public BaseResponse<Team> getTeamById(long id) {
         if (id <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
@@ -116,6 +120,7 @@ public class TeamController {
      * @param
      * @return
      */
+    //todo 优化
     @GetMapping("/list")
     public BaseResponse<List<TeamUserVO>> listTeams(TeamQuery teamQuery,HttpServletRequest httpServletRequest) {
         if (teamQuery == null) {
@@ -146,6 +151,13 @@ public class TeamController {
         Page<Team> resultPage = teamService.page(page, queryWrapper);
         return ResultUtils.success(resultPage);
     }
+
+    /**
+     * 加入队伍
+     * @param teamJoinRequest
+     * @param httpServletRequest
+     * @return
+     */
     @PostMapping("join")
     public BaseResponse<Boolean> joinTeam(TeamJoinRequest teamJoinRequest,HttpServletRequest httpServletRequest){
         if (teamJoinRequest == null){
@@ -154,5 +166,13 @@ public class TeamController {
         User loginUser = userService.getLoginUser(httpServletRequest);
         boolean result = teamService.joinTeam(teamJoinRequest, loginUser);
         return ResultUtils.success(result);
+    }
+    public BaseResponse<Boolean> quitTeam(@RequestBody TeamQuitRequest teamquitRequest,HttpServletRequest httpServletRequest){
+    if (teamquitRequest == null){
+        throw new BusinessException(ErrorCode.PARAMS_ERROR);
+    }
+    User loginUser = userService.getLoginUser(httpServletRequest);
+    boolean result = teamService.quitTeam(teamquitRequest,loginUser);
+    return ResultUtils.success(result);
     }
 }

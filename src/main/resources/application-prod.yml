@@ -5,7 +5,7 @@
 #    driver-class-name: com.mysql.jdbc.Driver
 #    url: 'jdbc:mysql://sh-cynosdbmysql-grp-98pxrcoq.sql.tencentcdb.com:29164/user_center?useSSL=false'
 #    username: self
-#    password: liyupi66!
+#    password: XXX!
 #  # session 失效时间
 #  session:
 #    timeout: 86400

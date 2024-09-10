@@ -1,7 +1,6 @@
 package com.bopao.model.request;
 
 import lombok.Data;
-
 import java.io.Serializable;
 
 /**
