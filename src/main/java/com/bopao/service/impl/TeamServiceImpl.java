@@ -68,7 +68,7 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
         if (StringUtils.isBlank(name) || name.length() > 20){
             throw new BusinessException(ErrorCode.PARAMS_ERROR,"队伍标题不满足要求");
         }
-        //3. 队伍描述大于512(todoTest)
+        //3. 队伍描述大于512
         String description = team.getDescription();
         if (StringUtils.isNotBlank(description) && description.length()>512){
             throw new BusinessException(ErrorCode.PARAMS_ERROR,"队伍描述过长");
@@ -86,6 +86,14 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
                 throw new BusinessException(ErrorCode.PARAMS_ERROR,"密码设置不正确");
             }
         }
+        //todo
+        //如果status为公开的不允许设置密码
+        if (TeamStatusEnum.PUBLIC.equals(enumByValue) && StringUtils.isNotBlank(teamPassword)){
+            throw new BusinessException(ErrorCode.OPERATION_ERROR,"公开房间不允许设置密码");
+        }
+        if (team.getUserId() != loginUser.getId()){
+            throw new BusinessException(ErrorCode.OPERATION_ERROR,"只能创建自己的队伍");
+        }
         // 6. 超时时间 > 当前时间
         // todo 时区问题
         Date expireTime = team.getExpireTime();
@@ -93,7 +101,7 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
             throw new BusinessException(ErrorCode.PARAMS_ERROR,"时间设置不正确");
         }
         // 7. 校验用户最多创建 5 个队伍
-        // todo 有 bug，可能同时创建 100 个队伍
+        // todo 有 bug，可能同时创建 100 个队伍(加锁)
         Long loginUserId = loginUser.getId();
         QueryWrapper<Team> queryWrapper=new QueryWrapper<>();
         queryWrapper.eq("userId", loginUserId);
@@ -135,13 +143,18 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
             throw new BusinessException(ErrorCode.PARAMS_ERROR,"队伍不存在");
         }
         //只有管理员或者队伍的创建者可以修改
-        //todo 测试有问题，自己和管理员都不可以修改自己队伍
+        //todo 测试好像有问题
         if (oldTeam.getUserId() != loginUser.getId() && !userService.isAdmin(loginUser)){
             throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
         }
         TeamStatusEnum enumByValue = TeamStatusEnum.getEnumByValue(teamUpdateRequest.getStatus());
-        if (enumByValue.equals(TeamStatusEnum.SECRET) && StringUtils.isBlank(teamUpdateRequest.getPassword())){
+        String password = teamUpdateRequest.getPassword();
+        if (enumByValue.equals(TeamStatusEnum.SECRET) && StringUtils.isBlank(password)){
             throw new BusinessException(ErrorCode.OPERATION_ERROR,"加密房间必须设置密码");
+        }
+        //如果status为公开的不允许设置密码
+        if (TeamStatusEnum.PUBLIC.equals(enumByValue) && StringUtils.isNotBlank(password)){
+            throw new BusinessException(ErrorCode.OPERATION_ERROR,"公开房间不允许设置密码");
         }
         Team newTeam=new Team();
         BeanUtils.copyProperties(teamUpdateRequest,newTeam);
@@ -156,7 +169,7 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
      * @return
      */
     @Override
-    //todo 测试有问题
+    //todo 测试有问题！！！！
     public List<TeamUserVO> listTeams(TeamQuery teamQuery, boolean isAdmin) {
         QueryWrapper<Team> queryWrapper=new QueryWrapper<>();
         if (teamQuery !=null){
@@ -251,12 +264,15 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
             throw new BusinessException(ErrorCode.OPERATION_ERROR, "不允许加入私有队伍");
         }
         String password = teamJoinRequest.getPassword();
+        if (TeamStatusEnum.PUBLIC.equals(enumByValue) && StringUtils.isNotBlank(password)){
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "此队伍为公开无需密码");
+        }
         if (TeamStatusEnum.SECRET.equals(enumByValue)){
             if (StringUtils.isBlank(password) || !password.equals(team.getPassword())){
                 throw new BusinessException(ErrorCode.FORBIDDEN_ERROR, "密码错误");
             }
         }
-        //todo 需要多数据测试
+        //todo 需要多数据测试（优化点：用户可以创建5个队伍，然后加入5个队伍？创建队伍只插入team表数据）
         //用户最多加入5个队伍
         Long userId = loginUser.getId();
         QueryWrapper<UserTeam> queryWrapper=new QueryWrapper<>();

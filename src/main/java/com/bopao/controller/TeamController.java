@@ -136,8 +136,6 @@ public class TeamController {
         }
         boolean isAdmin = userService.isAdmin(httpServletRequest);
         List<TeamUserVO> listTeam = teamService.listTeams(teamQuery, isAdmin);
-
-
         return ResultUtils.success(listTeam);
     }
     /**
@@ -175,6 +173,14 @@ public class TeamController {
         boolean result = teamService.joinTeam(teamJoinRequest, loginUser);
         return ResultUtils.success(result);
     }
+
+    /**
+     * 退出队伍
+     * @param teamquitRequest
+     * @param httpServletRequest
+     * @return
+     */
+    @PostMapping("/quit")
     public BaseResponse<Boolean> quitTeam(@RequestBody TeamQuitRequest teamquitRequest,HttpServletRequest httpServletRequest){
     if (teamquitRequest == null){
         throw new BusinessException(ErrorCode.PARAMS_ERROR);

@@ -107,6 +107,12 @@ public class UserController {
         return ResultUtils.success(safetyUser);
     }
 
+    /**
+     *名称搜索用户(管理员)
+     * @param username
+     * @param request
+     * @return
+     */
     @GetMapping("/search")
     public BaseResponse<List<User>> searchUsers(String username, HttpServletRequest request) {
         if (!userService.isAdmin(request)) {
@@ -121,10 +127,16 @@ public class UserController {
         return ResultUtils.success(list);
     }
 
+    /**
+     * 删除用户(管理员)
+     * @param id
+     * @param request
+     * @return
+     */
     @PostMapping("/delete")
     public BaseResponse<Boolean> deleteUser(@RequestBody long id, HttpServletRequest request) {
         if (!userService.isAdmin(request)) {
-            throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
+            throw new BusinessException(ErrorCode.NO_AUTH_ERROR, "缺少管理员权限");
         }
         if (id <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
@@ -133,6 +145,12 @@ public class UserController {
         return ResultUtils.success(b);
     }
 
+    /**
+     * 更新用户(仅允许用户和管理员)
+     * @param user
+     * @param request
+     * @return
+     */
     @PostMapping("/update")
     public BaseResponse<Boolean> update(@RequestBody User user, HttpServletRequest request) {
         if (user == null || user.getId() == null) {
@@ -149,6 +167,12 @@ public class UserController {
         boolean result = userService.updateById(newUser);
         return ResultUtils.success(result);
     }
+
+    /**
+     * 标签搜索
+     * @param tagNameList
+     * @return
+     */
     @GetMapping("search/tags")
     public BaseResponse<List<User>> searchUsersByTags(@RequestParam(required = false) List<String> tagNameList) {
         if (CollectionUtils.isEmpty(tagNameList)) {
@@ -158,12 +182,34 @@ public class UserController {
         return ResultUtils.success(userList);
     }
 
+    /**
+     * 主页推荐
+     * @param pageSize
+     * @param pageNum
+     * @param request
+     * @return
+     */
     @GetMapping("/recommend")
     public BaseResponse<Page<User>> recommendUsers(@RequestParam long pageSize, @RequestParam long pageNum, HttpServletRequest request) {
         // 调用服务层的方法
         Page<User> recommendedUsers = userService.recommendUsers(pageSize, pageNum, request);
         // 将结果封装到BaseResponse中返回
         return ResultUtils.success(recommendedUsers);
+    }
+    /**
+     * 获取最匹配的用户
+     *
+     * @param num
+     * @param request
+     * @return
+     */
+    @GetMapping("/match")
+    public BaseResponse<List<User>> matchUsers(long num, HttpServletRequest request) {
+        if (num <= 0 || num > 20) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        User loginUser = userService.getLoginUser(request);
+        return ResultUtils.success(userService.matchUsers(num, loginUser));
     }
 }
 

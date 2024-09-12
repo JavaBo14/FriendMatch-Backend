@@ -83,5 +83,20 @@ public interface UserService extends IService<User> {
      */
     List<User> searchUsersByTags(List<String> tagNameList);
 
+    /**
+     * 主页推荐
+     * @param pageSize
+     * @param pageNum
+     * @param request
+     * @return
+     */
     Page<User> recommendUsers(long pageSize, long pageNum, HttpServletRequest request);
+
+    /**
+     * 随机匹配
+     * @param num
+     * @param loginUser
+     * @return
+     */
+    List<User> matchUsers(long num, User loginUser);
 }

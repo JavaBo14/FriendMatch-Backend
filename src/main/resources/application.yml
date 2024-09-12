@@ -24,7 +24,7 @@ spring:
     port: 6379
     timeout: 5000
 server:
-  port: 8081
+  port: 8080
   servlet:
     context-path: /api
     #将cookie的作用域提高到域名层级（忽略端口）
