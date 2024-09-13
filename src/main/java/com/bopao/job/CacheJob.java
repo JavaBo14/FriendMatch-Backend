@@ -38,11 +38,12 @@ public class CacheJob {
                     Page<User> page = userService.page(new Page<>(1, 20), queryWrapper);
                     String redisKey = String.format("bopao:user:recommend:%s", mianUserId);
                     ValueOperations valueOperations = redisTemplate.opsForValue();
-                    // 写缓存
                     try {
-                        valueOperations.set(redisKey, page, 30000, TimeUnit.MILLISECONDS);
+                        // 设置1天的缓存过期时间
+                        valueOperations.set(redisKey, page, 1, TimeUnit.DAYS);
+                        log.info("Cache updated successfully for userId: {}", mianUserId);
                     } catch (Exception e) {
-                        log.error("redis set key error", e);
+                        log.error("redis set key error for userId: {}", mianUserId, e);
                     }
                 }
             }

@@ -180,6 +180,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         safetyUser.setEmail(originUser.getEmail());
         safetyUser.setPlanetCode(originUser.getPlanetCode());
         safetyUser.setUserRole(originUser.getUserRole());
+        safetyUser.setTags(originUser.getTags());
         safetyUser.setUserStatus(originUser.getUserStatus());
         safetyUser.setCreateTime(originUser.getCreateTime());
         return safetyUser;
@@ -290,7 +291,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         userPage = this.page(new Page<>(pageNum, pageSize), queryWrapper);
         // 写缓存
         try {
-            valueOperations.set(redisKey, userPage, 30000, TimeUnit.MILLISECONDS);
+            valueOperations.set(redisKey, userPage, 1, TimeUnit.DAYS);
         }catch (Exception e){
             log.error("redis set key error", e);
         }

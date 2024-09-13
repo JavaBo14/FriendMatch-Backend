@@ -177,6 +177,7 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
             if (id != null && id >0){
                 queryWrapper.eq("id",id);
             }
+            //IN 操作符用于查询idList所有数据
             List<Long> idList = teamQuery.getIdList();
             if (CollectionUtils.isNotEmpty(idList)){
                 queryWrapper.in("id",id);
@@ -224,6 +225,7 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
             if (userId == null){
                 continue;
             }
+
             User user = userService.getById(userId);
             UserVO userVO=new UserVO();
             BeanUtils.copyProperties(user,userVO);

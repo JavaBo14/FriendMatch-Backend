@@ -14,6 +14,7 @@ import java.util.List;
  * @from https://github.com/JavaBo14/Matching
  */
 @EqualsAndHashCode(callSuper = true)
+//当你的类是某个类的子类，并且你想在 equals 和 hashCode 方法中包含超类（父类）的字段时，可以使用 @EqualsAndHashCode(callSuper = true)。
 @Data
 public class TeamQuery extends PageRequest {
     /**
