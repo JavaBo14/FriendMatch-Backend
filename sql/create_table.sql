@@ -15,7 +15,7 @@ create table user
         primary key,
     userAccount  varchar(256) null comment '账号',
     avatarUrl    varchar(1024) null comment '用户头像',
-    gender       tinyint null comment '性别',
+    gender       tinyint null comment '性别 0 - 男 1 - 女',
     userPassword varchar(512)       not null comment '密码',
     phone        varchar(128) null comment '电话',
     email        varchar(512) null comment '邮箱',

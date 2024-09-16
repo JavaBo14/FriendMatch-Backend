@@ -24,15 +24,14 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.web.bind.annotation.*;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 
 @Slf4j
 @RestController
 @RequestMapping("/team")
+@CrossOrigin(origins = {"http://localhost:3000"})
 public class TeamController {
 
 
@@ -86,7 +85,7 @@ public class TeamController {
     }
 
     /**
-     * 更新队伍
+     * 更新队伍（只能更新自己创建的房间）
      *
      * @param teamUpdateRequest
      * @param request
@@ -130,14 +129,54 @@ public class TeamController {
      */
     //todo 优化
     @GetMapping("/list")
-    public BaseResponse<List<TeamUserVO>> listTeams(TeamQuery teamQuery,HttpServletRequest httpServletRequest) {
+    public BaseResponse<List<TeamUserVO>> listTeams(TeamQuery teamQuery, HttpServletRequest request) {
         if (teamQuery == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
-        boolean isAdmin = userService.isAdmin(httpServletRequest);
-        List<TeamUserVO> listTeam = teamService.listTeams(teamQuery, isAdmin);
-        return ResultUtils.success(listTeam);
+        boolean isAdmin = userService.isAdmin(request);
+        // 1. 查询队伍列表
+        List<TeamUserVO> teamList = teamService.listTeams(teamQuery, isAdmin);
+        final List<Long> teamIdList = teamList.stream().map(TeamUserVO::getId).collect(Collectors.toList());
+        if (teamIdList.isEmpty()) {
+            // 如果没有队伍，直接返回空结果
+            return ResultUtils.success(Collections.emptyList());
+        }
+        // 2. 判断当前用户是否已加入队伍
+        try {
+            User loginUser = userService.getLoginUser(request);
+
+            if (loginUser != null) {
+                QueryWrapper<UserTeam> userTeamQueryWrapper = new QueryWrapper<>();
+                userTeamQueryWrapper.eq("userId", loginUser.getId());
+                userTeamQueryWrapper.in("teamId", teamIdList);
+
+                List<UserTeam> userTeamList = userTeamService.list(userTeamQueryWrapper);
+                // 已加入的队伍 id 集合
+                Set<Long> hasJoinTeamIdSet = userTeamList.stream().map(UserTeam::getTeamId).collect(Collectors.toSet());
+
+                teamList.forEach(team -> {
+                    boolean hasJoin = hasJoinTeamIdSet.contains(team.getId());
+                    team.setHasJoin(hasJoin);
+                });
+            }
+        } catch (Exception e) {
+            // 打印异常日志，方便排查问题
+            log.error("Error checking if user has joined teams: ", e);
+        }
+        // 3. 查询已加入队伍的人数
+        QueryWrapper<UserTeam> userTeamJoinQueryWrapper = new QueryWrapper<>();
+        userTeamJoinQueryWrapper.in("teamId", teamIdList);
+        List<UserTeam> userTeamList = userTeamService.list(userTeamJoinQueryWrapper);
+        // 队伍 id => 加入这个队伍的用户列表
+        Map<Long, List<UserTeam>> teamIdUserTeamList = userTeamList.stream().collect(Collectors.groupingBy(UserTeam::getTeamId));
+        teamList.forEach(team -> {
+            int hasJoinNum = teamIdUserTeamList.getOrDefault(team.getId(), new ArrayList<>()).size();
+            team.setHasJoinNum(hasJoinNum);
+        });
+        return ResultUtils.success(teamList);
     }
+
+
     /**
      * 分页获取队伍列表
      *

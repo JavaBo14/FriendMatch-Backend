@@ -1,25 +1,30 @@
 package com.bopao.service.impl;
 
+import cn.hutool.core.util.RandomUtil;
+import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.bopao.common.ErrorCode;
-import com.bopao.contant.UserConstant;
 import com.bopao.exception.BusinessException;
 import com.bopao.mapper.UserMapper;
 import com.bopao.model.domain.User;
+import com.bopao.model.request.UserRegisterRequest;
 import com.bopao.service.UserService;
 import com.bopao.utils.AlgorithmUtils;
+import com.bopao.utils.EmailUtils;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.math3.util.Pair;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.DigestUtils;
+
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.util.*;
@@ -27,6 +32,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
 import static com.bopao.contant.UserConstant.USER_LOGIN_STATE;
 
 /**
@@ -46,6 +52,13 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     @Resource
     private RedisTemplate redisTemplate;
 
+    @Resource
+    private StringRedisTemplate stringRedisTemplate;
+
+    @Resource
+    private EmailUtils emailUtils;
+
+
 
     /**
      * 盐值，混淆密码
@@ -54,17 +67,19 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
 
     /**
      * 用户注册
-     *
-     * @param userAccount   用户账户
-     * @param userPassword  用户密码
-     * @param checkPassword 校验密码
-     * @param planetCode    星球编号
-     * @return 新用户 id
+     * @param userRegisterRequest
+     * @return
      */
     @Override
-    public long userRegister(String userAccount, String userPassword, String checkPassword, String planetCode) {
+    public long userRegister(UserRegisterRequest userRegisterRequest) {
+        String userAccount = userRegisterRequest.getUserAccount();
+        String userPassword = userRegisterRequest.getUserPassword();
+        String checkPassword = userRegisterRequest.getCheckPassword();
+        String planetCode = userRegisterRequest.getPlanetCode();
+        String emailCode = userRegisterRequest.getEmailCode();
+        String email = userRegisterRequest.getEmail();
         // 1. 校验
-        if (StringUtils.isAnyBlank(userAccount, userPassword, checkPassword, planetCode)) {
+        if (StringUtils.isAnyBlank(userAccount,userPassword,checkPassword)) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数为空");
         }
         if (userAccount.length() < 4) {
@@ -80,11 +95,15 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         String validPattern = "[`~!@#$%^&*()+=|{}':;',\\\\[\\\\].<>/?~！@#￥%……&*（）——+|{}【】‘；：”“’。，、？]";
         Matcher matcher = Pattern.compile(validPattern).matcher(userAccount);
         if (matcher.find()) {
-            return -1;
+            throw new BusinessException(ErrorCode.PARAMS_ERROR,"账号不能包含特殊字符");
         }
         // 密码和校验密码相同
         if (!userPassword.equals(checkPassword)) {
-            return -1;
+            throw new BusinessException(ErrorCode.PARAMS_ERROR,"密码输入不一致");
+        }
+        String emailCodeByRedis = stringRedisTemplate.opsForValue().get(email);
+        if (emailCodeByRedis == null || !emailCode.equals(emailCodeByRedis)){
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "验证码不正确");
         }
         // 账户不能重复
         QueryWrapper<User> queryWrapper = new QueryWrapper<>();
@@ -241,8 +260,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     }
 
     /**
-     * 标签搜索
-     * @param tagNameList
+     * 根据标签搜索用户（内存过滤）
+     *
+     * @param tagNameList 用户要拥有的标签
      * @return
      */
     @Override
@@ -291,7 +311,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         userPage = this.page(new Page<>(pageNum, pageSize), queryWrapper);
         // 写缓存
         try {
-            valueOperations.set(redisKey, userPage, 1, TimeUnit.DAYS);
+            valueOperations.set(redisKey, userPage, 30, TimeUnit.SECONDS);
         }catch (Exception e){
             log.error("redis set key error", e);
         }
@@ -351,6 +371,31 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
             finalUserList.add(userIdUserListMap.get(userId).get(0));
         }
         return finalUserList;
+    }
+
+    /**
+     * 获取邮箱注册验证码
+     *
+     * @param email 邮箱
+     * @param type  类型
+     * @return 验证码
+     */
+    @Override
+    public String sendEmail(String email, String type) {
+        String code = RandomUtil.randomNumbers(6);
+        log.info("本次验证码的code是：{}", code);
+        String context = "<b>尊敬的用户：</b><br><br><br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;您好，" +
+                "boart 交友网提醒您本次的验证码是：<b>{}</b>，" +
+                "有效期1分钟。<br><br><br><b>XiangKe</b>";
+        String html = StrUtil.format(context, code);
+
+        if ("REGISTER".equals(type)) {
+            // 将验证码存储到 Redis 中，设置过期时间为 1 分钟
+            stringRedisTemplate.opsForValue().set(email, code, 1, TimeUnit.MINUTES);
+            // 多线程异步请求发送邮件
+            new Thread(() -> emailUtils.sendHtml("【XiangKe】邮箱注册验证", html, email)).start();
+        }
+        return code;
     }
 }
 

@@ -3,6 +3,9 @@ spring:
   application:
     name: bopao-backend
   # 支持 swagger3
+  # 默认 dev 环境
+  profiles:
+    active: dev
   mvc:
     pathmatch:
       matching-strategy: ant_path_matcher

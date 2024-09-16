@@ -6,10 +6,12 @@ import com.bopao.exception.BusinessException;
 import com.bopao.model.domain.User;
 import com.bopao.model.request.UserLoginRequest;
 import com.bopao.model.request.UserRegisterRequest;
+import com.bopao.model.request.UserUpdateRequest;
 import com.bopao.service.UserService;
 import com.bopao.common.BaseResponse;
 import com.bopao.common.ErrorCode;
 import com.bopao.common.ResultUtils;
+import com.google.gson.Gson;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
@@ -32,14 +34,11 @@ import java.util.stream.Collectors;
 @Slf4j
 @RestController
 @RequestMapping("/user")
-@CrossOrigin(origins = {"http://localhost:5173"})
+@CrossOrigin(origins = {"http://localhost:3000"})
 public class UserController {
 
     @Resource
     private UserService userService;
-
-    @Resource
-    private RedisTemplate redisTemplate;
 
     /**
      * 用户注册
@@ -57,11 +56,19 @@ public class UserController {
         String userPassword = userRegisterRequest.getUserPassword();
         String checkPassword = userRegisterRequest.getCheckPassword();
         String planetCode = userRegisterRequest.getPlanetCode();
-        if (StringUtils.isAnyBlank(userAccount, userPassword, checkPassword, planetCode)) {
+        String email = userRegisterRequest.getEmail();
+        String emailCode = userRegisterRequest.getEmailCode();
+        if (StringUtils.isAnyBlank(userAccount, userPassword, checkPassword, planetCode,email,emailCode)) {
             return null;
         }
-        long result = userService.userRegister(userAccount, userPassword, checkPassword, planetCode);
+        long result = userService.userRegister(userRegisterRequest);
         return ResultUtils.success(result);
+    }
+
+    @GetMapping("/email")
+    public BaseResponse<String> sendEmail(@RequestParam String email, @RequestParam String type) {
+        String code = userService.sendEmail(email, type);
+        return ResultUtils.success(code);
     }
 
     /**
@@ -116,11 +123,10 @@ public class UserController {
     /**
      *名称搜索用户
      * @param username
-     * @param request
      * @return
      */
     @GetMapping("/search")
-    public BaseResponse<List<User>> searchUsers(String username, HttpServletRequest request) {
+    public BaseResponse<List<User>> searchUsers(String username) {
 //        if (!userService.isAdmin(request)) {
 //            throw new BusinessException(ErrorCode.NO_AUTH_ERROR, "缺少管理员权限");
 //        }
@@ -153,27 +159,52 @@ public class UserController {
 
     /**
      * 更新用户(仅允许用户和管理员)
-     * @param user
+     * @param userUpdateRequest
      * @param request
      * @return
      */
     @PostMapping("/update")
-    public BaseResponse<Boolean> update(@RequestBody User user, HttpServletRequest request) {
-        if (user == null || user.getId() == null) {
+    public BaseResponse<Boolean> update(@RequestBody UserUpdateRequest userUpdateRequest, HttpServletRequest request) {
+        if (userUpdateRequest == null || userUpdateRequest.getId() == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
         User loginUser = userService.getLoginUser(request);
         Long loginUserId = loginUser.getId();
         // 如果 loginUserId 不匹配或用户不是管理员，则抛出参数错误异常
-        if (!loginUserId.equals(user.getId()) && !userService.isAdmin(request)) {
+        if (!loginUserId.equals(userUpdateRequest.getId()) && !userService.isAdmin(request)) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
         User newUser = new User();
-        BeanUtils.copyProperties(user, newUser);
+        BeanUtils.copyProperties(userUpdateRequest, newUser);
         boolean result = userService.updateById(newUser);
         return ResultUtils.success(result);
     }
 
+
+    @PostMapping("add/tags")
+    public BaseResponse<Boolean> addTags(@RequestBody List<String> tagNameList, HttpServletRequest httpServletRequest) {
+        if (CollectionUtils.isEmpty(tagNameList)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        // 获取登录用户
+        User loginUser = userService.getLoginUser(httpServletRequest);
+        // 查询当前用户信息
+        QueryWrapper<User> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("id", loginUser.getId());
+        User existingUser = userService.getOne(queryWrapper);
+        if (existingUser == null) {
+            throw new BusinessException(ErrorCode.NOT_FOUND_ERROR, "用户不存在");
+        }
+        // 将标签列表直接设置到用户的 JSON 字段中
+        Gson gson=new Gson();
+        String tagList = gson.toJson(tagNameList);
+        log.info(tagList);
+        existingUser.setTags(tagList);  // 这里 tags 是数据库中的 JSON 类型字段
+        // 保存更新
+        boolean result = userService.updateById(existingUser);
+        // 返回操作结果
+        return ResultUtils.success(result);
+    }
     /**
      * 标签搜索
      * @param tagNameList

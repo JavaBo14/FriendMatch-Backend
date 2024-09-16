@@ -91,9 +91,6 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
         if (TeamStatusEnum.PUBLIC.equals(enumByValue) && StringUtils.isNotBlank(teamPassword)){
             throw new BusinessException(ErrorCode.OPERATION_ERROR,"公开房间不允许设置密码");
         }
-        if (team.getUserId() != loginUser.getId()){
-            throw new BusinessException(ErrorCode.OPERATION_ERROR,"只能创建自己的队伍");
-        }
         // 6. 超时时间 > 当前时间
         // todo 时区问题
         Date expireTime = team.getExpireTime();
@@ -142,9 +139,9 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
         if (oldTeam == null){
             throw new BusinessException(ErrorCode.PARAMS_ERROR,"队伍不存在");
         }
-        //只有管理员或者队伍的创建者可以修改
         //todo 测试好像有问题
-        if (oldTeam.getUserId() != loginUser.getId() && !userService.isAdmin(loginUser)){
+        // 只有管理员或者队伍的创建者可以修改
+        if (oldTeam.getUserId() != loginUser.getId() && !userService.isAdmin(loginUser)) {
             throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
         }
         TeamStatusEnum enumByValue = TeamStatusEnum.getEnumByValue(teamUpdateRequest.getStatus());
