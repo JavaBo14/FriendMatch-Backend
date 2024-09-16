@@ -15,6 +15,9 @@ import javax.annotation.Resource;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.stream.LongStream;
+
 @Component
 @Slf4j
 public class CacheJob {
@@ -24,8 +27,10 @@ public class CacheJob {
     private UserService userService;
     @Resource
     private RedissonClient redissonClient;
-    private List<Long> mianUserListId = Arrays.asList(1L);
-
+//    private List<Long> mianUserListId = Arrays.asList(1L);
+    private List<Long> mianUserListId = LongStream.rangeClosed(1, 100)
+                                                   .boxed()
+                                                   .collect(Collectors.toList());
     @Scheduled(cron = "0 0 0 * * *")
     public void doCacheRecommendUser() {
 

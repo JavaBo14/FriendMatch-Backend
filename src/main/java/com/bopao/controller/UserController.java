@@ -195,8 +195,11 @@ public class UserController {
         if (existingUser == null) {
             throw new BusinessException(ErrorCode.NOT_FOUND_ERROR, "用户不存在");
         }
-        // 将标签列表直接设置到用户的 JSON 字段中
+//        System.out.println(tagNameList);
+//        [Java, Spring Boot, Redis]
+//      将标签列表直接设置到用户的 JSON 字段中
         Gson gson=new Gson();
+//        使用 Gson 将 List<String> 转换为 JSON 字符串!!!
         String tagList = gson.toJson(tagNameList);
         log.info(tagList);
         existingUser.setTags(tagList);  // 这里 tags 是数据库中的 JSON 类型字段
@@ -210,6 +213,7 @@ public class UserController {
      * @param tagNameList
      * @return
      */
+//    @RequestParam 默认会将逗号分隔的字符串自动转换为 List<String> ->aaa,bbb,ccc->[aaa, bbb, ccc]
     @GetMapping("search/tags")
     public BaseResponse<List<User>> searchUsersByTags(@RequestParam(required = false) List<String> tagNameList) {
         if (CollectionUtils.isEmpty(tagNameList)) {

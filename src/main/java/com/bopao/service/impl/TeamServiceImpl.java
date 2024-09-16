@@ -106,6 +106,11 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
         if (count >=5 ){
             throw new BusinessException(ErrorCode.PARAMS_ERROR,"创建队伍过多");
         }
+        //只能创建自己的队伍
+        Long userId = team.getUserId();
+        if (userId != loginUserId){
+            throw new BusinessException(ErrorCode.OPERATION_ERROR,"只能创建自己的队伍");
+        }
         // 8. 插入队伍信息到队伍表
         team.setId(null);
         team.setUserId(loginUserId);
