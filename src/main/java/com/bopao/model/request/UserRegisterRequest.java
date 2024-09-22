@@ -20,9 +20,9 @@ public class UserRegisterRequest implements Serializable {
 
     private String checkPassword;
 
-    private String emailCode;
-
-    private String email;
+//    private String emailCode;
+//
+//    private String email;
 
     private String planetCode;
 }

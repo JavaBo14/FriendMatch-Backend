@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.bopao.common.ErrorCode;
+import com.bopao.common.TagStatus;
 import com.bopao.exception.BusinessException;
 import com.bopao.mapper.UserMapper;
 import com.bopao.model.domain.User;
@@ -76,8 +77,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         String userPassword = userRegisterRequest.getUserPassword();
         String checkPassword = userRegisterRequest.getCheckPassword();
         String planetCode = userRegisterRequest.getPlanetCode();
-        String emailCode = userRegisterRequest.getEmailCode();
-        String email = userRegisterRequest.getEmail();
+//        String emailCode = userRegisterRequest.getEmailCode();
+//        String email = userRegisterRequest.getEmail();
         // 1. 校验
         if (StringUtils.isAnyBlank(userAccount,userPassword,checkPassword)) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数为空");
@@ -101,10 +102,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         if (!userPassword.equals(checkPassword)) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR,"密码输入不一致");
         }
-        String emailCodeByRedis = stringRedisTemplate.opsForValue().get(email);
-        if (emailCodeByRedis == null || !emailCode.equals(emailCodeByRedis)){
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "验证码不正确");
-        }
+//        String emailCodeByRedis = stringRedisTemplate.opsForValue().get(email);
+//        if (emailCodeByRedis == null || !emailCode.equals(emailCodeByRedis)){
+//            throw new BusinessException(ErrorCode.PARAMS_ERROR, "验证码不正确");
+//        }
         // 账户不能重复
         QueryWrapper<User> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("userAccount", userAccount);
@@ -126,6 +127,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         user.setUserAccount(userAccount);
         user.setUserPassword(encryptPassword);
         user.setPlanetCode(planetCode);
+        user.setTagStatus(String.valueOf(TagStatus.WAIT));
         boolean saveResult = this.save(user);
         if (!saveResult) {
             throw new BusinessException(ErrorCode.NOT_FOUND_ERROR, "参数为空");
@@ -200,6 +202,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         safetyUser.setPlanetCode(originUser.getPlanetCode());
         safetyUser.setUserRole(originUser.getUserRole());
         safetyUser.setTags(originUser.getTags());
+        safetyUser.setTagStatus(originUser.getTagStatus());
         safetyUser.setUserStatus(originUser.getUserStatus());
         safetyUser.setCreateTime(originUser.getCreateTime());
         return safetyUser;

@@ -1,6 +1,10 @@
 package com.bopao.config;
 
+import com.bopao.job.CacheJob;
 import lombok.Data;
+import org.redisson.Redisson;
+import org.redisson.api.RedissonClient;
+import org.redisson.config.Config;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -14,6 +18,8 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 @Data
 public class RedisConfig {
     private int database;
+    private String host;
+    private String port;
 
     @Bean
     public LettuceConnectionFactory redisConnectionFactory() {
@@ -28,6 +34,18 @@ public class RedisConfig {
         return new StringRedisTemplate(redisConnectionFactory);
     }
 
+    @Bean
+    public RedissonClient redissonClient() {
+        // 1. 创建配置
+        Config config = new Config();
+        String redisAddress = String.format("redis://%s:%s", host, port);
+        config.useSingleServer().setAddress(redisAddress).setDatabase(2);
+        // 2. 创建实例
+        RedissonClient redisson = Redisson.create(config);
+        return redisson;
+    }
+}
+
 //    @Bean
 //    public StringRedisTemplate stringRedisTemplate(RedisConnectionFactory redisConnectionFactory) {
 //        StringRedisTemplate template = new StringRedisTemplate(redisConnectionFactory);
@@ -40,4 +58,4 @@ public class RedisConfig {
 //        template.setDefaultSerializer(jsonSerializer);
 //        return template;
 //    }
-}
+

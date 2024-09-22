@@ -2,6 +2,7 @@ package com.bopao.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.bopao.common.TagStatus;
 import com.bopao.exception.BusinessException;
 import com.bopao.model.domain.User;
 import com.bopao.model.request.UserLoginRequest;
@@ -56,9 +57,12 @@ public class UserController {
         String userPassword = userRegisterRequest.getUserPassword();
         String checkPassword = userRegisterRequest.getCheckPassword();
         String planetCode = userRegisterRequest.getPlanetCode();
-        String email = userRegisterRequest.getEmail();
-        String emailCode = userRegisterRequest.getEmailCode();
-        if (StringUtils.isAnyBlank(userAccount, userPassword, checkPassword, planetCode,email,emailCode)) {
+//        String email = userRegisterRequest.getEmail();
+//        String emailCode = userRegisterRequest.getEmailCode();
+//        if (StringUtils.isAnyBlank(userAccount, userPassword, checkPassword, planetCode,email,emailCode)) {
+//            return null;
+//        }
+        if (StringUtils.isAnyBlank(userAccount, userPassword, checkPassword, planetCode)) {
             return null;
         }
         long result = userService.userRegister(userRegisterRequest);
@@ -203,6 +207,12 @@ public class UserController {
         String tagList = gson.toJson(tagNameList);
         log.info(tagList);
         existingUser.setTags(tagList);  // 这里 tags 是数据库中的 JSON 类型字段
+
+        String tagStatus = existingUser.getTagStatus();
+        if (TagStatus.fromString(tagStatus) == TagStatus.WAIT) {
+            existingUser.setTagStatus(TagStatus.SUCCEED.getStatus());
+        }
+
         // 保存更新
         boolean result = userService.updateById(existingUser);
         // 返回操作结果
