@@ -2,6 +2,7 @@ package com.bopao.service.impl;
 
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -13,7 +14,6 @@ import com.bopao.model.domain.User;
 import com.bopao.model.request.UserRegisterRequest;
 import com.bopao.service.UserService;
 import com.bopao.utils.AlgorithmUtils;
-import com.bopao.utils.EmailUtils;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import lombok.extern.slf4j.Slf4j;
@@ -56,8 +56,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     @Resource
     private StringRedisTemplate stringRedisTemplate;
 
-    @Resource
-    private EmailUtils emailUtils;
+//    @Resource
+//    private EmailUtils emailUtils;
 
 
 
@@ -81,7 +81,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
 //        String email = userRegisterRequest.getEmail();
         // 1. 校验
         if (StringUtils.isAnyBlank(userAccount,userPassword,checkPassword)) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数为空");
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "账号密码确认密码需要填写完整");
         }
         if (userAccount.length() < 4) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户账号过短");
@@ -127,10 +127,11 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         user.setUserAccount(userAccount);
         user.setUserPassword(encryptPassword);
         user.setPlanetCode(planetCode);
+        user.setAvatarUrl("https://s2.loli.net/2024/09/14/7zJjfsiIFlW54dM.png");
         user.setTagStatus(String.valueOf(TagStatus.WAIT));
         boolean saveResult = this.save(user);
         if (!saveResult) {
-            throw new BusinessException(ErrorCode.NOT_FOUND_ERROR, "参数为空");
+            throw new BusinessException(ErrorCode.OPERATION_ERROR,"操作失败");
         }
         return user.getId();
     }
@@ -148,7 +149,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     public User userLogin(String userAccount, String userPassword, HttpServletRequest request) {
         // 1. 校验
         if (StringUtils.isAnyBlank(userAccount, userPassword)) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数为空");        }
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数为空");
+        }
         if (userAccount.length() < 4) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR,"请求参数错误");
         }
@@ -276,10 +278,13 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         }
         // 1. 先查询所有用户
         QueryWrapper<User> queryWrapper = new QueryWrapper<>();
-        List<User> userList = userMapper.selectList(queryWrapper);
+        List<User> userList = userMapper.selectList(queryWrapper);// 把硬盘（MySQL）的数据取出来，放在内存中
         Gson gson = new Gson();
+        for (int i = 0; i < userList.size(); i++) {
+
+        }
         // 2. 在内存中判断是否包含要求的标签
-        return userList.stream().filter(user -> {
+        return userList.stream().filter(user /**User 是不是就是 List 中的每个对象**/ -> { // userList 集合，使用 stream 流 filter（英语看得懂吗） 过滤
             String tagsStr = user.getTags();
             Set<String> tempTagNameSet = gson.fromJson(tagsStr, new TypeToken<Set<String>>() {
             }.getType());
@@ -384,22 +389,22 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
      * @param type  类型
      * @return 验证码
      */
-    @Override
-    public String sendEmail(String email, String type) {
-        String code = RandomUtil.randomNumbers(6);
-        log.info("本次验证码的code是：{}", code);
-        String context = "<b>尊敬的用户：</b><br><br><br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;您好，" +
-                "boart 交友网提醒您本次的验证码是：<b>{}</b>，" +
-                "有效期1分钟。<br><br><br><b>XiangKe</b>";
-        String html = StrUtil.format(context, code);
-
-        if ("REGISTER".equals(type)) {
-            // 将验证码存储到 Redis 中，设置过期时间为 1 分钟
-            stringRedisTemplate.opsForValue().set(email, code, 1, TimeUnit.MINUTES);
-            // 多线程异步请求发送邮件
-            new Thread(() -> emailUtils.sendHtml("【XiangKe】邮箱注册验证", html, email)).start();
-        }
-        return code;
-    }
+//    @Override
+//    public String sendEmail(String email, String type) {
+//        String code = RandomUtil.randomNumbers(6);
+//        log.info("本次验证码的code是：{}", code);
+//        String context = "<b>尊敬的用户：</b><br><br><br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;您好，" +
+//                "boart 交友网提醒您本次的验证码是：<b>{}</b>，" +
+//                "有效期1分钟。<br><br><br><b>XiangKe</b>";
+//        String html = StrUtil.format(context, code);
+//
+//        if ("REGISTER".equals(type)) {
+//            // 将验证码存储到 Redis 中，设置过期时间为 1 分钟
+//            stringRedisTemplate.opsForValue().set(email, code, 1, TimeUnit.MINUTES);
+//            // 多线程异步请求发送邮件
+//            new Thread(() -> emailUtils.sendHtml("【XiangKe】邮箱注册验证", html, email)).start();
+//        }
+//        return code;
+//    }
 }
 

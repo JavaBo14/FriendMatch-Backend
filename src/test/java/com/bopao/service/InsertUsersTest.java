@@ -35,8 +35,8 @@ public class InsertUsersTest {
         List<User> userList = new ArrayList<>();
         for (int i = 0; i < INSERT_NUM; i++) {
             User user = new User();
-            user.setUsername("dogyupi");
-            user.setUserAccount("fakeyupi");
+            user.setUsername("ikun");
+            user.setUserAccount("ikun");
             user.setAvatarUrl("https://636f-codenav-8grj8px727565176-1256524210.tcb.qcloud.la/img/logo.png");
             user.setGender(0);
             user.setUserPassword("12345678");

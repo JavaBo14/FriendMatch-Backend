@@ -4,7 +4,7 @@ import lombok.Data;
 import java.io.Serializable;
 
 /**
- * 通用返回类
+ * 通用返回类(返回前端)
  *
  * @param <T>
  * @author <a href="https://github.com/JavaBo14">Bo</a>

@@ -103,5 +103,5 @@ public interface UserService extends IService<User> {
      * @param type
      * @return
      */
-    String sendEmail(String email, String type);
+//    String sendEmail(String email, String type);
 }

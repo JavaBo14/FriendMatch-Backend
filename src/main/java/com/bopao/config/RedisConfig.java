@@ -20,6 +20,7 @@ public class RedisConfig {
     private int database;
     private String host;
     private String port;
+    private String password;
 
     @Bean
     public LettuceConnectionFactory redisConnectionFactory() {
@@ -39,12 +40,12 @@ public class RedisConfig {
         // 1. 创建配置
         Config config = new Config();
         String redisAddress = String.format("redis://%s:%s", host, port);
-        config.useSingleServer().setAddress(redisAddress).setDatabase(2);
+        config.useSingleServer().setAddress(redisAddress).setDatabase(3).setPassword(password);
         // 2. 创建实例
         RedissonClient redisson = Redisson.create(config);
         return redisson;
     }
-}
+    }
 
 //    @Bean
 //    public StringRedisTemplate stringRedisTemplate(RedisConnectionFactory redisConnectionFactory) {

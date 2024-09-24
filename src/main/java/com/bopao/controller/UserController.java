@@ -69,11 +69,11 @@ public class UserController {
         return ResultUtils.success(result);
     }
 
-    @GetMapping("/email")
-    public BaseResponse<String> sendEmail(@RequestParam String email, @RequestParam String type) {
-        String code = userService.sendEmail(email, type);
-        return ResultUtils.success(code);
-    }
+//    @GetMapping("/email")
+//    public BaseResponse<String> sendEmail(@RequestParam String email, @RequestParam String type) {
+//        String code = userService.sendEmail(email, type);
+//        return ResultUtils.success(code);
+//    }
 
     /**
      * 用户登录

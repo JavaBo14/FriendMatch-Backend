@@ -45,7 +45,8 @@ public class CacheJob {
                     ValueOperations valueOperations = redisTemplate.opsForValue();
                     try {
                         // 设置1天的缓存过期时间
-                        valueOperations.set(redisKey, page, 1, TimeUnit.DAYS);
+//                        valueOperations.set(redisKey, page, 1, TimeUnit.DAYS);
+                        valueOperations.set(redisKey, page, 30, TimeUnit.SECONDS);
                         log.info("Cache updated successfully for userId: {}", mianUserId);
                     } catch (Exception e) {
                         log.error("redis set key error for userId: {}", mianUserId, e);
