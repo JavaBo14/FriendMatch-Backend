@@ -280,9 +280,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         QueryWrapper<User> queryWrapper = new QueryWrapper<>();
         List<User> userList = userMapper.selectList(queryWrapper);// 把硬盘（MySQL）的数据取出来，放在内存中
         Gson gson = new Gson();
-        for (int i = 0; i < userList.size(); i++) {
-
-        }
         // 2. 在内存中判断是否包含要求的标签
         return userList.stream().filter(user /**User 是不是就是 List 中的每个对象**/ -> { // userList 集合，使用 stream 流 filter（英语看得懂吗） 过滤
             String tagsStr = user.getTags();

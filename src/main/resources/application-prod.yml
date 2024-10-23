@@ -2,20 +2,20 @@
 # @author <a href="https://github.com/JavaBo14">Bo</a>
 # @from <a href="https://github.com/JavaBo14/Bi">
 server:
-  port: 8080
+  port: 8014
 spring:
   # 数据库配置
   # todo 需替换配置
   datasource:
     driver-class-name: com.mysql.jdbc.Driver
-    url: jdbc:mysql://47.83.24.78:3306/bopao
+    url: jdbc:mysql://boart.top:3306/bopao
     username: BoPao
     password: 123123
   # Redis 配置
   # todo 需替换配置
   redis:
     database: 1
-    host: 47.83.24.78
+    host: boart.top
     port: 6379
     timeout: 5000
     password: 1014

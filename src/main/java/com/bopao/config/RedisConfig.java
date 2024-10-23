@@ -45,7 +45,7 @@ public class RedisConfig {
         RedissonClient redisson = Redisson.create(config);
         return redisson;
     }
-    }
+}
 
 //    @Bean
 //    public StringRedisTemplate stringRedisTemplate(RedisConnectionFactory redisConnectionFactory) {
